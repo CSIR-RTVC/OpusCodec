@@ -1,0 +1,6 @@
+[submodule "externals/CodecUtils"]
+	path = externals/CodecUtils
+	url = https://github.com/CSIR-RTVC/CodecUtils
+[submodule "externals/vcpkg"]
+	path = externals/vcpkg
+	url = https://github.com/CSIR-RTVC/vcpkg
