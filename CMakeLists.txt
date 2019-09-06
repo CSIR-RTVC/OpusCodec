@@ -83,7 +83,7 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
     endif()
 endif()
 
-# add path to DShowBaseClasses
+# add path to Opus
 LIST(APPEND CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/externals/vcpkg/packages/opus_x86-windows/share/opus)
 find_package(Opus REQUIRED)
 

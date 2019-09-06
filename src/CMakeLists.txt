@@ -48,6 +48,11 @@ install(TARGETS OpusCodec
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+export(TARGETS
+        OpusCodec
+    NAMESPACE OpusCodec::
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/OpusCodecConfig.cmake"
+)
 install(EXPORT OpusCodecTargets
   FILE
     OpusCodecTargets.cmake
