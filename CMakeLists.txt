@@ -4,6 +4,7 @@ project(libOpusCodec VERSION 1.0.0 LANGUAGES CXX)
 #Make sure that custom modules like FindRapidJSON are found
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
 
+LIST(APPEND CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/externals/vcpkg/packages/opus_x86-windows/share/opus)
 ##############################################
 include(FetchContent)
 FetchContent_Declare(
@@ -14,6 +15,7 @@ FetchContent_Declare(
 
 # Declare dependencies
 find_package(Vpp 1.0.0 REQUIRED)
+find_package(Opus REQUIRED)
 
 ##############################################
 # Create target and set properties
@@ -41,6 +43,7 @@ target_include_directories(OpusCodec
     PUBLIC
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/OpusCodec>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
