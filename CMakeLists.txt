@@ -7,13 +7,13 @@ list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
 ##############################################
 include(FetchContent)
 FetchContent_Declare(
-  vpp
+  Vpp
   GIT_REPOSITORY https://github.com/CSIR-RTVC/vpp
 )
 
 
 # Declare dependencies
-find_package(vpp 1.0.0)
+find_package(Vpp 1.0.0 REQUIRED)
 
 ##############################################
 # Create target and set properties
@@ -21,7 +21,7 @@ find_package(vpp 1.0.0)
 SET(OPUS_LIB_HDRS
         ./include/OpusCodec/OpusCodec.h
         ./include/OpusCodec/OpusFactory.h
-        ./src/StdAfx.h
+        ./src/stdafx.h
         ./src/targetver.h
 )
 
@@ -29,7 +29,7 @@ SET(OPUS_LIB_SRCS
         ./src/OpusCodec.cpp
         ./src/OpusFactory.cpp
         ./src/dllmain.cpp
-        ./src/StdAfx.cpp
+        ./src/stdafx.cpp
 )
 ADD_LIBRARY( OpusCodec SHARED ${OPUS_LIB_SRCS} ${OPUS_LIB_HDRS})
 
