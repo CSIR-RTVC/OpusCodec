@@ -7,15 +7,14 @@ list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
 LIST(APPEND CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/externals/vcpkg/packages/opus_x86-windows/share/opus)
 ##############################################
 include(FetchContent)
+find_package(Opus REQUIRED)
+
 FetchContent_Declare(
   Vpp
   GIT_REPOSITORY https://github.com/CSIR-RTVC/vpp
 )
-
-
 # Declare dependencies
 find_package(Vpp 1.0.0 REQUIRED)
-find_package(Opus REQUIRED)
 
 ##############################################
 # Create target and set properties
@@ -53,8 +52,8 @@ target_compile_options(OpusCodec PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>)
 
 target_link_libraries(OpusCodec
     PUBLIC
-        Vpp:Vpp
-    PRIVATE
+        Vpp::Vpp
+	PRIVATE
         Opus::opus 
 )
 
