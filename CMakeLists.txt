@@ -1,132 +1,113 @@
-# CMakeLists.txt
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.11)
+project(libOpusCodec VERSION 1.0.0 LANGUAGES CXX)
 
-# hints from https://github.com/robotology/how-to-export-cpp-library/blob/master/CMakeLists.txt
-project(libOpusv2
-        LANGUAGES CXX C
-        VERSION 0.0.0.0)
+#Make sure that custom modules like FindRapidJSON are found
+list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
 
-# Control where libraries and executables are placed during the build.
-# With the following settings executables are placed in <the top level of the
-# build tree>/bin and libraries/archives in <top level of the build tree>/lib.
-# This is particularly useful to run ctests on libraries built on Windows
-# machines: tests, which are executables, are placed in the same folders of
-# dlls, which are treated as executables as well, so that they can properly
-# find the libraries to run. This is a because of missing RPATH on Windows.
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+##############################################
+include(FetchContent)
+FetchContent_Declare(
+  vpp
+  GIT_REPOSITORY https://github.com/CSIR-RTVC/vpp
+)
 
-# To build shared libraries in Windows, we set CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS to TRUE.
-# See https://cmake.org/cmake/help/v3.4/variable/CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS.html
-# See https://blog.kitware.com/create-dlls-on-windows-without-declspec-using-new-cmake-export-all-feature/
-#set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-# Under MSVC, we set CMAKE_DEBUG_POSTFIX to "d" to add a trailing "d" to library
-# built in debug mode. In this Windows user can compile, build and install the
-# library in both Release and Debug configuration avoiding naming clashes in the
-# installation directories.
-if(MSVC)
-    set(CMAKE_DEBUG_POSTFIX "d")
-endif()
+# Declare dependencies
+find_package(vpp 1.0.0)
 
-# Build position independent code.
-# Position Independent Code (PIC) is commonly used for shared libraries so that
-# the same shared library code can be loaded in each program address space in a
-# location where it will not overlap with any other uses of such memory.
-# In particular, this option avoids problems occurring when a process wants to
-# load more than one shared library at the same virtual address.
-# Since shared libraries cannot predict where other shared libraries could be
-# loaded, this is an unavoidable problem with the traditional shared library
-# concept.
-# Generating position-independent code is often the default behavior for most
-# modern compilers.
-# Moreover linking a static library that is not built with PIC from a shared
-# library will fail on some compiler/architecture combinations.
-# Further details on PIC can be found here:
-# https://eli.thegreenplace.net/2011/11/03/position-independent-code-pic-in-shared-libraries/
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+##############################################
+# Create target and set properties
 
-# Disable C and C++ compiler extensions.
-# C/CXX_EXTENSIONS are ON by default to allow the compilers to use extended
-# variants of the C/CXX language.
-# However, this could expose cross-platform bugs in user code or in the headers
-# of third-party dependencies and thus it is strongly suggested to turn
-# extensions off.
-set(CMAKE_C_EXTENSIONS OFF)
-set(CMAKE_CXX_EXTENSIONS OFF)
+SET(OPUS_LIB_HDRS
+        ./include/OpusCodec/OpusCodec.h
+        ./include/OpusCodec/OpusFactory.h
+        ./src/StdAfx.h
+        ./src/targetver.h
+)
 
-# We use
-# - InstallBasicPackageFiles (http://robotology.github.io/ycm/gh-pages/v0.8/module/InstallBasicPackageFiles.html)
-# - AddUninstallTarget (http://robotology.github.io/ycm/gh-pages/v0.8/module/AddUninstallTarget.html)
-# - AddInstallRPATHSupport (http://robotology.github.io/ycm/gh-pages/v0.8/module/AddInstallRPATHSupport.html)
-# from YCM. Files are under the cmake subdirectory.
-# See https://github.com/robotology/ycm/
-# If you don't want to ship these files with your code (recommended), you can
-# instead depend on YCM.
-# In this case replace the following line with
-# find_package(YCM REQUIRED)
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+SET(OPUS_LIB_SRCS
+        ./src/OpusCodec.cpp
+        ./src/OpusFactory.cpp
+        ./src/dllmain.cpp
+        ./src/StdAfx.cpp
+)
+ADD_LIBRARY( OpusCodec SHARED ${OPUS_LIB_SRCS} ${OPUS_LIB_HDRS})
 
-# Enable RPATH support for installed binaries and libraries
-include(AddInstallRPATHSupport)
-add_install_rpath_support(BIN_DIRS "${CMAKE_INSTALL_FULL_BINDIR}"
-                          LIB_DIRS "${CMAKE_INSTALL_FULL_LIBDIR}"
-                          INSTALL_NAME_DIR "${CMAKE_INSTALL_FULL_LIBDIR}"
-                          USE_LINK_PATH)
+#Add an alias so that library can be used inside the build tree, e.g. when testing
+#add_library(OpusCodec::OpusCodec ALIAS OpusCodec)
 
-# Encourage user to specify a build type (e.g. Release, Debug, etc.), otherwise set it to Release.
-if(NOT CMAKE_CONFIGURATION_TYPES)
-    if(NOT CMAKE_BUILD_TYPE)
-        message(STATUS "Setting build type to 'Release' as none was specified.")
-        set_property(CACHE CMAKE_BUILD_TYPE PROPERTY VALUE "Release")
-    endif()
-endif()
+#Set target properties
+target_include_directories(OpusCodec
+    PUBLIC
+        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
-# add path to Opus
-LIST(APPEND CMAKE_PREFIX_PATH ${PROJECT_SOURCE_DIR}/externals/vcpkg/packages/opus_x86-windows/share/opus)
-find_package(Opus REQUIRED)
+target_compile_features(OpusCodec PRIVATE cxx_auto_type)
+target_compile_options(OpusCodec PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>)
 
-ADD_SUBDIRECTORY(src)
-ADD_SUBDIRECTORY(app)
+target_link_libraries(OpusCodec
+    PUBLIC
+        Vpp:Vpp
+    PRIVATE
+        Opus::opus 
+)
 
-# Install baseclasses-config.cmake and baseclasses-configVersion.cmake
-#install(FILES
-#  "${CMAKE_CURRENT_BINARY_DIR}/baseclasses-config.cmake"
-#  "${CMAKE_CURRENT_BINARY_DIR}/baseclasses-configVersion.cmake"
-#  DESTINATION "cmake"
-#  COMPONENT baseclasses
-#)
+##############################################
+# Installation instructions
 
-# Install public header files, source files should not be installed because they are in the lib
-#install(
-#  DIRECTORY ${PROJECT_SOURCE_DIR}/baseclasses
-#  DESTINATION include
-#  COMPONENT baseclasses
-#  FILES_MATCHING PATTERN "*.h"
-#)
+include(GNUInstallDirs)
+set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/OpusCodec)
 
-# Create and install CMake configuration files for your project that are
-# necessary to for other projects to call find_package(LibTemplateCMake).
-#
-# Note that it is extremely important to use exactly the project name while
-# installing configuration files (you can use PROJECT_NAME variable to avoid
-# any possible error). This is required to allow find_package() to properly
-# look for the installed library in system path, in particular in Windows when
-# the installation is performed in the default path.
-#
-# install_basic_package_files() comes with many input parameters to customize
-# the configuration files. The parameters used in the following call provide
-# basic versions of CMake configuration files.
-# See install_basic_package_files() documentation found in ./cmake folder.
-#
-# Note that if your library depends from other libraries, you are probably
-# required to used the install_basic_package_files() DEPENDENCIES option.
-#include(InstallBasicPackageFiles)
-#install_basic_package_files(${PROJECT_NAME}
-#                            VERSION ${${PROJECT_NAME}_VERSION}
-#                            COMPATIBILITY AnyNewerVersion
-#                            VARS_PREFIX ${PROJECT_NAME}
-#                            NO_CHECK_REQUIRED_COMPONENTS_MACRO)
-# Add the uninstall target
-#include(AddUninstallTarget)
+install(TARGETS OpusCodec
+    EXPORT OpusCodec-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+#This is required so that the exported target has the name OpusCodec and not OpusCodec
+set_target_properties(OpusCodec PROPERTIES EXPORT_NAME OpusCodec)
+
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+#Export the targets to a script
+install(EXPORT OpusCodec-targets
+  FILE
+    OpusCodecTargets.cmake
+  NAMESPACE
+    OpusCodec::
+  DESTINATION
+    ${INSTALL_CONFIGDIR}
+)
+
+#Create a ConfigVersion.cmake file
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/OpusCodecConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/cmake/OpusCodecConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/OpusCodecConfig.cmake
+    INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
+)
+
+#Install the config, configversion and custom find modules
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/OpusCodecConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/OpusCodecConfigVersion.cmake
+    DESTINATION ${INSTALL_CONFIGDIR}
+)
+
+##############################################
+## Exporting from the build tree
+
+export(EXPORT OpusCodec-targets FILE ${CMAKE_CURRENT_BINARY_DIR}/OpusCodecTargets.cmake NAMESPACE OpusCodec::)
+
+#Register package in user's package registry
+export(PACKAGE OpusCodec)
+
+#add_subdirectory(test)
